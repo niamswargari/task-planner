@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Task Planner</title>
+<style>
+  :root {
+    --bg: #f5f6fa; --card: #ffffff; --ink: #1d2433; --muted: #5b6475; --line: #dde1ea;
+    --accent: #2f5bea; --accent-ink: #ffffff;
+    --high: #c0392b; --high-bg: #fdecea;
+    --med: #9a6700; --med-bg: #fff4d6;
+    --low: #1f7a4d; --low-bg: #e3f5ea;
+    --warn-bg: #fff4d6; --warn-line: #e5b93c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { margin: 0 0 4px; font-size: 1.7rem; }
+  .sub { margin: 0 0 20px; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  section.full { grid-column: 1 / -1; }
+  h2 { margin: 0 0 12px; font-size: 1.1rem; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 4px; }
+  input, select { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px;
+                  font: inherit; background: #fff; color: inherit; }
+  input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px solid #9db4ff; outline-offset: 1px; }
+  .field { margin-bottom: 12px; }
+  .error { color: var(--high); font-size: .85rem; min-height: 1.2em; margin: 0 0 8px; }
+  button { font: inherit; cursor: pointer; border-radius: 8px; padding: 9px 14px; border: 1px solid var(--line); background: #fff; color: var(--ink); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  button.small { padding: 4px 9px; font-size: .8rem; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  ul.tasks { list-style: none; margin: 0; padding: 0; }
+  ul.tasks li { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+  ul.tasks li:first-child { border-top: 0; }
+  .t-name { flex: 1; word-break: break-word; }
+  .t-meta { color: var(--muted); font-size: .85rem; white-space: nowrap; }
+  .badge { font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+  .p3 { color: var(--high); background: var(--high-bg); }
+  .p2 { color: var(--med); background: var(--med-bg); }
+  .p1 { color: var(--low); background: var(--low-bg); }
+  .empty { color: var(--muted); margin: 0; }
+  .plan-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+  .label-chip { background: #eef2ff; color: #243ea8; border: 1px solid #c9d4ff; border-radius: 999px;
+                font-size: .78rem; font-weight: 700; padding: 3px 10px; }
+  .disclaimer { color: var(--muted); font-size: .85rem; margin: 6px 0 14px; }
+  .days { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+  .day { border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: #fbfcff; }
+  .day h3 { margin: 0; font-size: 1rem; }
+  .day .cap { font-size: .8rem; color: var(--muted); margin-bottom: 6px; }
+  .bar { height: 6px; background: var(--line); border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+  .bar > span { display: block; height: 100%; background: var(--accent); }
+  .day ul { margin: 0; padding: 0; list-style: none; }
+  .day li { padding: 6px 0; border-top: 1px solid var(--line); font-size: .9rem; }
+  .day li small { display: block; color: var(--muted); }
+  .overflow { margin-top: 14px; background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 10px; padding: 12px; }
+  .overflow strong { display: block; margin-bottom: 4px; }
+  .overflow ul { margin: 6px 0 0 18px; padding: 0; }
+  .summary { margin: 0 0 12px; font-weight: 600; }
+  @media (max-width: 650px) {
+    .grid, .row { grid-template-columns: 1fr; }
+    h1 { font-size: 1.4rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Task Planner</h1>
+  <p class="sub">Turn your task list into an organised daily or weekly <em>suggested</em> plan, using your own priorities and time estimates.</p>
+
+  <div class="grid">
+    <section aria-labelledby="add-h">
+      <h2 id="add-h">1. Add a task</h2>
+      <form id="task-form" novalidate>
+        <div class="field">
+          <label for="task-name">Task name</label>
+          <input id="task-name" type="text" maxlength="80" autocomplete="off" placeholder="e.g. Prepare presentation">
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="task-hours">Time estimate (hours)</label>
+            <input id="task-hours" type="number" min="0.25" max="24" step="0.25" value="1">
+          </div>
+          <div class="field">
+            <label for="task-priority">Priority</label>
+            <select id="task-priority">
+              <option value="3">High</option>
+              <option value="2" selected>Medium</option>
+              <option value="1">Low</option>
+            </select>
+          </div>
+        </div>
+        <p id="form-error" class="error" role="alert"></p>
+        <div class="actions">
+          <button type="submit" class="primary">Add task</button>
+          <button type="button" id="load-sample">Load sample tasks</button>
+          <button type="button" id="clear-all">Clear all</button>
+        </div>
+      </form>
+    </section>
+
+    <section aria-labelledby="list-h">
+      <h2 id="list-h">Your tasks (<span id="task-count">0</span>)</h2>
+      <p id="task-empty" class="empty">No tasks yet. Add one on the left.</p>
+      <ul id="task-list" class="tasks" aria-live="polite"></ul>
+    </section>
+
+    <section class="full" aria-labelledby="plan-h">
+      <h2 id="plan-h">2. Plan settings</h2>
+      <div class="row" style="max-width:520px">
+        <div class="field">
+          <label for="plan-length">Plan length</label>
+          <select id="plan-length">
+            <option value="1">Daily (1 day)</option>
+            <option value="5" selected>Weekly (5 weekdays)</option>
+            <option value="7">Weekly (7 days)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="daily-hours">Available hours per day</label>
+          <input id="daily-hours" type="number" min="0.25" max="24" step="0.25" value="8">
+        </div>
+      </div>
+      <p id="settings-error" class="error" role="alert"></p>
+      <button type="button" id="build-plan" class="primary">Create plan</button>
+    </section>
+
+    <section class="full" aria-labelledby="out-h">
+      <div class="plan-head">
+        <h2 id="out-h">3. Plan</h2>
+        <span class="label-chip">SUGGESTED PLAN</span>
+      </div>
+      <p class="disclaimer">This is a suggested plan generated from the priorities and estimates you entered. It is not a fixed schedule: review it and adjust it to your real commitments.</p>
+      <p id="plan-placeholder" class="empty">Add tasks and press “Create plan” to see a suggested plan.</p>
+      <p id="plan-summary" class="summary" hidden></p>
+      <div id="plan-output" class="days" aria-live="polite"></div>
+      <div id="overflow-message" class="overflow" role="status" hidden></div>
+    </section>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const PRIORITY_LABEL = { 3: 'High', 2: 'Medium', 1: 'Low' };
+const WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+let tasks = [];     // in-memory state: { id, name, hours, priority, order }
+let nextOrder = 1;
+
+/* ---------- Pure scheduling logic (also used by the automated tests) ---------- */
+function dayNamesFor(daysCount) {
+  return daysCount === 1 ? ['Today'] : WEEK.slice(0, daysCount);
+}
+
+function buildSchedule(taskList, daysCount, capacity) {
+  const days = dayNamesFor(daysCount).map(name => ({ name, tasks: [], hours: 0 }));
+  // High priority first; ties keep the order the user entered them.
+  const sorted = [...taskList].sort((a, b) => b.priority - a.priority || a.order - b.order);
+  const unscheduled = [];
+  sorted.forEach(task => {
+    const available = days.filter(day => day.hours + task.hours <= capacity);
+    if (!available.length) { unscheduled.push(task); return; }
+    // Balance the load: pick the least-filled day that still fits the task.
+    available.sort((a, b) => a.hours - b.hours || days.indexOf(a) - days.indexOf(b));
+    const day = available[0];
+    day.tasks.push(task);
+    day.hours += task.hours;
+  });
+  return { days, unscheduled };
+}
+
+/* ---------- Helpers ---------- */
+const $ = sel => document.querySelector(sel);
+const fmt = n => (Math.round(n * 100) / 100).toString();
+const hrs = n => fmt(n) + (n === 1 ? ' hr' : ' hrs');
+
+function validateHours(value, label) {
+  if (value === '' || Number.isNaN(Number(value))) return label + ' must be a number.';
+  const n = Number(value);
+  if (n < 0.25 || n > 24) return label + ' must be between 0.25 and 24 hours.';
+  if (Math.abs(n * 4 - Math.round(n * 4)) > 1e-9) return label + ' must be in steps of 0.25 hours.';
+  return '';
+}
+
+/* ---------- Task list rendering ---------- */
+function renderTasks() {
+  const list = $('#task-list');
+  list.replaceChildren();
+  $('#task-count').textContent = tasks.length;
+  $('#task-empty').hidden = tasks.length > 0;
+  tasks.forEach(task => {
+    const li = document.createElement('li');
+    const name = document.createElement('span'); name.className = 't-name'; name.textContent = task.name;
+    const meta = document.createElement('span'); meta.className = 't-meta'; meta.textContent = hrs(task.hours);
+    const badge = document.createElement('span'); badge.className = 'badge p' + task.priority; badge.textContent = PRIORITY_LABEL[task.priority];
+    const rm = document.createElement('button'); rm.type = 'button'; rm.className = 'small';
+    rm.textContent = 'Remove'; rm.setAttribute('aria-label', 'Remove task ' + task.name);
+    rm.addEventListener('click', () => { tasks = tasks.filter(t => t.id !== task.id); renderTasks(); });
+    li.append(name, meta, badge, rm);
+    list.append(li);
+  });
+}
+
+function addTask(name, hours, priority) {
+  tasks.push({ id: nextOrder, order: nextOrder, name, hours, priority });
+  nextOrder++;
+}
+
+/* ---------- Events ---------- */
+$('#task-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const err = $('#form-error');
+  const name = $('#task-name').value.trim();
+  const hoursRaw = $('#task-hours').value;
+  if (!name) { err.textContent = 'Please enter a task name.'; return; }
+  const hErr = validateHours(hoursRaw, 'Time estimate');
+  if (hErr) { err.textContent = hErr; return; }
+  err.textContent = '';
+  addTask(name, Number(hoursRaw), Number($('#task-priority').value));
+  $('#task-name').value = '';
+  $('#task-name').focus();
+  renderTasks();
+});
+
+$('#load-sample').addEventListener('click', () => {
+  addTask('Prepare presentation', 3, 3);
+  addTask('Code review', 2, 2);
+  addTask('Email cleanup', 1, 1);
+  renderTasks();
+});
+
+$('#clear-all').addEventListener('click', () => {
+  tasks = [];
+  renderTasks();
+  $('#plan-output').replaceChildren();
+  $('#overflow-message').hidden = true;
+  $('#plan-summary').hidden = true;
+  $('#plan-placeholder').hidden = false;
+  $('#plan-placeholder').textContent = 'Add tasks and press “Create plan” to see a suggested plan.';
+});
+
+$('#build-plan').addEventListener('click', () => {
+  const output = $('#plan-output');
+  const placeholder = $('#plan-placeholder');
+  const overflow = $('#overflow-message');
+  const summary = $('#plan-summary');
+  const settingsErr = $('#settings-error');
+  output.replaceChildren();
+  overflow.hidden = true;
+  summary.hidden = true;
+  overflow.replaceChildren();
+
+  if (!tasks.length) {
+    placeholder.hidden = false;
+    placeholder.textContent = 'Add at least one task to create a suggested plan.';
+    return;
+  }
+  const capErr = validateHours($('#daily-hours').value, 'Available hours per day');
+  if (capErr) { settingsErr.textContent = capErr; return; }
+  settingsErr.textContent = '';
+  placeholder.hidden = true;
+
+  const daysCount = Number($('#plan-length').value);
+  const capacity = Number($('#daily-hours').value);
+  const { days, unscheduled } = buildSchedule(tasks, daysCount, capacity);
+
+  const scheduledCount = tasks.length - unscheduled.length;
+  const totalHours = days.reduce((s, d) => s + d.hours, 0);
+  summary.textContent = 'Suggested plan: ' + scheduledCount + ' of ' + tasks.length + ' tasks placed, '
+    + hrs(totalHours) + ' planned across ' + (daysCount === 1 ? '1 day' : daysCount + ' days') + '.';
+  summary.hidden = false;
+
+  days.forEach(day => {
+    const card = document.createElement('div'); card.className = 'day';
+    const h = document.createElement('h3'); h.textContent = day.name;
+    const cap = document.createElement('div'); cap.className = 'cap';
+    cap.textContent = fmt(day.hours) + ' of ' + fmt(capacity) + ' hours';
+    const bar = document.createElement('div'); bar.className = 'bar';
+    const fill = document.createElement('span'); fill.style.width = Math.min(100, day.hours / capacity * 100) + '%';
+    bar.append(fill);
+    card.append(h, cap, bar);
+    if (!day.tasks.length) {
+      const none = document.createElement('p'); none.className = 'empty'; none.textContent = 'No tasks scheduled.';
+      card.append(none);
+    } else {
+      const ul = document.createElement('ul');
+      day.tasks.forEach(t => {
+        const li = document.createElement('li');
+        li.textContent = t.name;
+        const small = document.createElement('small');
+        small.textContent = hrs(t.hours) + ' · ' + PRIORITY_LABEL[t.priority] + ' priority';
+        li.append(small);
+        ul.append(li);
+      });
+      card.append(ul);
+    }
+    output.append(card);
+  });
+
+  if (unscheduled.length) {
+    const strong = document.createElement('strong');
+    strong.textContent = 'Could not fit ' + unscheduled.length + (unscheduled.length === 1 ? ' task' : ' tasks')
+      + ' within ' + fmt(capacity) + ' hours per day:';
+    const ul = document.createElement('ul');
+    unscheduled.forEach(t => {
+      const li = document.createElement('li');
+      li.textContent = t.name + ' (' + hrs(t.hours) + ', ' + PRIORITY_LABEL[t.priority] + ' priority)';
+      ul.append(li);
+    });
+    overflow.append(strong, ul);
+    overflow.hidden = false;
+  }
+});
+
+renderTasks();
+</script>
+</body>
+</html>

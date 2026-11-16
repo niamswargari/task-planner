@@ -1,0 +1,92 @@
+[
+  {
+    "id": "TC-01",
+    "desc": "Empty name, negative, zero, >24 and non-0.25 hours are rejected",
+    "ok": true,
+    "detail": "tasks added=0"
+  },
+  {
+    "id": "TC-02",
+    "desc": "Sample tasks produce the expected 5-day plan",
+    "ok": true,
+    "detail": "Monday | 3 of 8 hours | Prepare presentation | 3 hrs · High priority // Tuesday | 2 of 8 hours | Code review | 2 hrs · Medium priority // Wednesday | 1 of 8 hours | Email cleanup | 1 hr · Low priority // Thursday | 0 of 8 hours | No tasks scheduled. // Friday | 0 of 8 hours | No tasks scheduled."
+  },
+  {
+    "id": "TC-03",
+    "desc": "High priority is scheduled before Medium and Low regardless of entry order",
+    "ok": true,
+    "detail": "High job,Medium job,Low job"
+  },
+  {
+    "id": "TC-04",
+    "desc": "Tasks beyond daily capacity are listed as overflow (lowest priority dropped)",
+    "ok": true,
+    "detail": "Could not fit 2 tasks within 8 hours per day:Gym (4 hrs, Low priority)Laundry (2 hrs, Low priority)"
+  },
+  {
+    "id": "TC-05",
+    "desc": "A task longer than one day's capacity goes to overflow",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "id": "TC-06",
+    "desc": "Creating a plan with no tasks shows a helpful message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "id": "TC-07",
+    "desc": "Invalid daily hours (30) are rejected and no plan is drawn",
+    "ok": true,
+    "detail": "Available hours per day must be between 0.25 and 24 hours."
+  },
+  {
+    "id": "TC-08",
+    "desc": "HTML in a task name is shown as plain text, not executed",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "id": "TC-09",
+    "desc": "Remove button deletes only that task",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "id": "TC-10",
+    "desc": "Plan lengths 1/5/7 give Today / Mon-Fri / Mon-Sun",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "id": "TC-11",
+    "desc": "Equal priorities keep entry order; 0.25 h steps sum exactly (fills 1 of 1 h)",
+    "ok": true,
+    "detail": "1 of 1 hours"
+  },
+  {
+    "id": "TC-12",
+    "desc": "LIMITATION: 25 h of work vs 40 h capacity, yet 'Long task' (5 h) is reported as not fitting",
+    "ok": true,
+    "detail": "greedy least-filled placement fragments free time"
+  },
+  {
+    "id": "TC-13",
+    "desc": "Output is clearly labelled as a suggested plan",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "id": "TC-14",
+    "desc": "At 375 px width layout is single-column with no horizontal scroll",
+    "ok": true,
+    "detail": "{\"s\":375,\"c\":375,\"cols\":1}"
+  },
+  {
+    "id": "TC-15",
+    "desc": "No JavaScript errors in console during tests",
+    "ok": true,
+    "detail": ""
+  }
+]
